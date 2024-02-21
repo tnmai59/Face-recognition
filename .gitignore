@@ -2,3 +2,7 @@ node_modules/
 frvenv/
 pics/
 VN-celeb/
+facenet/
+model/
+embeddings_25.pkl
+Task3/Data/
