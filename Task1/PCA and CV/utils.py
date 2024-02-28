@@ -147,7 +147,11 @@ def show_wrong_match(X_train, X_test, y_train, y_test, y_predict, match_index):
     if len(wrong_list) == 0:
         print('All true')
         return
-    fig, ax = plt.subplots(len(wrong_list),2,figsize=(10,10))
+    num_cols = 2
+    num_rows = (len(wrong_list) + num_cols - 1) // num_cols
+    figsize = (num_cols * 5, num_rows * 5)
+
+    fig, ax = plt.subplots(len(wrong_list),2,figsize=figsize)
     if len(wrong_list) == 1:
         img_actual = np.reshape(X_test[wrong_list[0][0]], original_shape)
         ax[0].imshow(img_actual, cmap='gray')
@@ -173,6 +177,29 @@ def show_wrong_match(X_train, X_test, y_train, y_test, y_predict, match_index):
             ax[i, 1].set_title(f'Predicted: {y_train[wrong_list[i][1]]}')
             ax[i, 1].axis('off')
         plt.show()
+
+def show_wrong_match_ml(y_true, y_pred, X_test):
+    original_shape = (112,92)
+    wrong_list = []
+    for i in range(len(y_pred)):
+        if y_pred[i] != y_true[i]:
+            wrong_list.append(i)
+
+    if len(wrong_list) != 0:
+        num_cols = 1
+        num_rows = (len(wrong_list) + num_cols - 1) // num_cols
+        figsize = (num_cols * 5, num_rows * 5)
+
+        fig, ax = plt.subplots(len(wrong_list),1,figsize=figsize)
+        for i in range(len(wrong_list)):
+            # Display the actual image
+            img_actual = np.reshape(X_test[wrong_list[i]], original_shape)
+            ax[i].imshow(img_actual, cmap='gray')
+            ax[i].set_title(f'Actual : {y_true[wrong_list[i]]} \n Predict : {y_pred[wrong_list[i]]}')
+            ax[i].axis('off')
+        plt.show()
+    else:
+        print('All true')
 
 
 def cross_validation_db(
