@@ -56,6 +56,7 @@ def minkowski_distance(X_train, X_test, y_train, p=3):
     for i in range(len(X_test)):
         distances = np.sum(np.abs(X_train - X_test[i])**p, axis=1)
         min_index = np.argmin(np.power(distances, 1/p))
+        match_index.append(min_index)
         y_predict.append(y_train[min_index])
     return y_predict, match_index
 
@@ -104,7 +105,7 @@ def mahalanobis_distance(X_train, X_test, y_train):
         diff = X_train - X_test[i]
         d = np.sum(diff.dot(inv_covariance_matrix) * diff, axis=1)
         min_ = np.argmin(d)
-        match_index.append(d)
+        match_index.append(min_)
         # Assign the label of the nearest neighbor as the predicted label
         y_predict.append(y_train[min_])
 
@@ -137,39 +138,56 @@ def modified_mahattan_distance(X_train, X_test, y_train):
         y_predict.append(y_train[min_])
     return y_predict, match_index
 
-def show_wrong_match(y_test, y_predict, match_index, train_file_loc, test_file_loc):
-    count = 0
-    y_test_pics, y_predict_pics = [], []
-    for i in tqdm(range(len(y_test))):
+def show_wrong_match(X_train, X_test, y_train, y_test, y_predict, match_index):
+    original_shape = (112,92)
+    wrong_list = []
+    for i in range(len(y_predict)):
         if y_predict[i] != y_test[i]:
-            count += 1
-            y_test_pics.append(test_file_loc[i])
-            y_predict_pics.append(train_file_loc[match_index[i]])
-    fig, ax = plt.subplots(10, 2, figsize=(6,25))
-    for i in range(10):
-        # Display the actual image
-        img_actual = Image.open(y_test_pics[i]).convert('L')
-        ax[i, 0].imshow(img_actual, cmap='gray')
-        ax[i, 0].set_title(f'Actual')
-        ax[i, 0].axis('off')
+            wrong_list.append((i, match_index[i]))
+    if len(wrong_list) == 0:
+        print('All true')
+        return
+    fig, ax = plt.subplots(len(wrong_list),2,figsize=(10,10))
+    if len(wrong_list) == 1:
+        img_actual = np.reshape(X_test[wrong_list[0][0]], original_shape)
+        ax[0].imshow(img_actual, cmap='gray')
+        ax[0].set_title(f'Actual : {y_test[wrong_list[0][0]]}')
+        ax[0].axis('off')
 
         # Display the predicted image
-        img_predicted = Image.open(y_predict_pics[i]).convert('L')
-        ax[i, 1].imshow(img_predicted, cmap='gray')
-        ax[i, 1].set_title(f'Predicted')
-        ax[i, 1].axis('off')
+        img_predicted = np.reshape(X_train[wrong_list[0][1]], original_shape)
+        ax[1].imshow(img_predicted, cmap='gray')
+        ax[1].set_title(f'Predicted: {y_train[wrong_list[0][1]]}')
+        ax[1].axis('off')
+    else:
+        for i in range(len(wrong_list)):
+            # Display the actual image
+            img_actual = np.reshape(X_test[wrong_list[i][0]], original_shape)
+            ax[i, 0].imshow(img_actual, cmap='gray')
+            ax[i, 0].set_title(f'Actual : {y_test[wrong_list[i][0]]}')
+            ax[i, 0].axis('off')
 
-    plt.tight_layout()
-    plt.show()
+            # Display the predicted image
+            img_predicted = np.reshape(X_train[wrong_list[i][1]], original_shape)
+            ax[i, 1].imshow(img_predicted, cmap='gray')
+            ax[i, 1].set_title(f'Predicted: {y_train[wrong_list[i][1]]}')
+            ax[i, 1].axis('off')
+        plt.show()
 
-def cross_validation_db(X, y, num_folds, func):
+
+def cross_validation_db(
+        # X_origin,
+          X, y, num_folds, func):
     kf = KFold(n_splits=num_folds, shuffle=True, random_state=42)
     avg = 0
     for fold, (train_index, test_index) in enumerate(kf.split(X)):
+        print(f'Fold: {fold}')
         X_train, X_test = X[train_index], X[test_index]
+        # X_train_origin, X_test_origin = X_origin[train_index], X_origin[test_index]
         y_train, y_test = y[train_index], y[test_index]
         y_predict, match_index = func(X_train, X_test, y_train)
         avg += accuracy_score(y_test, y_predict)
+        # show_wrong_match(X_train_origin, X_test_origin, y_train, y_test, y_predict, match_index)
     return avg/num_folds
 
 def cross_validation_ml(X, y, num_folds, models):
